@@ -12,3 +12,10 @@ LLD for Digital Wallet Design
 8. Account Statement – This option should display the account statement for the specified user.<br>
 9. Overview – This option should display all the account numbers currently in the system. Additionally, it should show the current balances for these accounts.<br>
 10. Exit – The system should exit.<br>
+### Optional Requirements
+These are the requirements that are not mandatory, but good to have. Let’s go through the optional requirements.
+
+1. Offer 1 – When the amount is transferred from user A to user B, F₹ 10 must be added to both the sender and receiver wallets if their balance is the same. <br>
+2. Offer 2 – Whenever Offer 2 is selected, the top 3 customers with the highest number of transactions will get F₹ 10, F₹ 5, and F₹ 2 as rewards. If there is a tie between customers, i.e., if customers have the same number of transactions, then the customer having higher account balance should be given preference. If there is still a tie, i.e., the customers have the same balance, then the customer whose account was created first should be given preference. <br>
+3. Add one more option called FixedDeposit <fd_amount>. And whenever the option is selected, an amount equal to <fd_amount> is parked for. If for the next 5 transactions, the account balance for that account remains above <fd_amount>, the user gets F₹ 10 as interest in their account. And if the account balance goes below <fd_amount>, then the FD should be dissolved and the user would need to give the FixedDeposit command again to start a new FD.
+Consider another added bonus, display the <fd_amount> and remaining transactions in the Overview and Statement command also.
