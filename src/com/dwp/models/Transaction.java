@@ -23,7 +23,7 @@ public class Transaction extends BaseEntity {
         this.amount = builder.amount;
         this.transactionStatus = builder.transactionStatus;
         this.transactionType = builder.transactionType;
-        this.txDate = builder.txDate == null ? new Date(): builder.txDate;
+        this.txDate = builder.txDate == null ? new Date() : builder.txDate;
         this.setId(builder.id);
     }
 

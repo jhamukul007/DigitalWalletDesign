@@ -16,7 +16,7 @@ public class MainCommandRunner {
         AccountService accountService = new AccountServiceImpl(logger);
         TransactionService transactionService = new TransactionServiceImpl(logger, accountService);
         Scanner scanner = new Scanner(System.in);
-        while (true){
+        while (true) {
             System.out.println("\n OPTIONS");
             System.out.println("1. Create Wallet");
             System.out.println("2. Transfer Fund");
@@ -68,8 +68,7 @@ public class MainCommandRunner {
                     default:
                         System.exit(0);
                 }
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
