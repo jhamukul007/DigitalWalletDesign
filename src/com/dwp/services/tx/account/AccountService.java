@@ -6,8 +6,11 @@ import com.dwp.models.TransactionDetail;
 
 public interface AccountService {
     void createAccount();
+
     Account getOrThrowByAccountNumber(Long accountNumber);
+
     void getAccountStatement(Long accountNumber);
+
     void getAccountBalance(Long accountNumber);
 
     TransactionDetail getTxDetails(Long accountNumber);
