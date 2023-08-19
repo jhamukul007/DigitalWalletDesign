@@ -5,24 +5,25 @@ import com.dwp.enums.TransactionType;
 import com.dwp.utils.AppUtil;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 public class Transaction extends BaseEntity {
-    private Long fromUserId;
-    private Long toUserId;
+    private Long fromAccount;
+    private Long toAccount;
     private BigDecimal amount;
     private TransactionStatus transactionStatus;
 
     private TransactionType transactionType;
 
-    private String tx_between;
+    private Date txDate;
 
     private Transaction(Builder builder) {
-        this.fromUserId = builder.fromUserId;
-        this.toUserId = builder.toUserId;
+        this.fromAccount = builder.fromAccount;
+        this.toAccount = builder.toAccount;
         this.amount = builder.amount;
         this.transactionStatus = builder.transactionStatus;
         this.transactionType = builder.transactionType;
-        this.tx_between = AppUtil.getTxBetween(fromUserId, toUserId);
+        this.txDate = builder.txDate == null ? new Date(): builder.txDate;
         this.setId(builder.id);
     }
 
@@ -32,14 +33,15 @@ public class Transaction extends BaseEntity {
 
     public static class Builder {
         private Long id;
-        private Long fromUserId;
-        private Long toUserId;
+        private Long fromAccount;
+        private Long toAccount;
         private BigDecimal amount;
         private TransactionStatus transactionStatus;
         private TransactionType transactionType;
+        private Date txDate;
 
-        public Builder fromUserId(Long fromUserId) {
-            this.fromUserId = fromUserId;
+        public Builder fromAccount(Long fromAccount) {
+            this.fromAccount = fromAccount;
             return this;
         }
 
@@ -48,8 +50,8 @@ public class Transaction extends BaseEntity {
             return this;
         }
 
-        public Builder toUserId(Long toUserId) {
-            this.toUserId = toUserId;
+        public Builder toAccount(Long toAccount) {
+            this.toAccount = toAccount;
             return this;
         }
 
@@ -68,21 +70,14 @@ public class Transaction extends BaseEntity {
             return this;
         }
 
+        public Builder txDate(Date txDate) {
+            this.txDate = txDate;
+            return this;
+        }
+
         public Transaction build() {
             return new Transaction(this);
         }
-    }
-
-    public Long getFromUserId() {
-        return fromUserId;
-    }
-
-    public Long getToUserId() {
-        return toUserId;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
     }
 
     public TransactionStatus getTransactionStatus() {
@@ -97,11 +92,31 @@ public class Transaction extends BaseEntity {
         this.transactionType = transactionType;
     }
 
+    public Date getTxDate() {
+        return txDate;
+    }
+
+    public Long getFromAccount() {
+        return fromAccount;
+    }
+
+    public Long getToAccount() {
+        return toAccount;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public TransactionType getTransactionType() {
+        return transactionType;
+    }
+
     @Override
     public Transaction clone() {
         return builder()
-                .fromUserId(this.fromUserId)
-                .toUserId(this.toUserId)
+                .fromAccount(this.fromAccount)
+                .toAccount(this.toAccount)
                 .transactionType(this.transactionType)
                 .transactionStatus(this.transactionStatus)
                 .amount(this.amount)
@@ -111,12 +126,11 @@ public class Transaction extends BaseEntity {
     @Override
     public String toString() {
         return "Transaction{" +
-                "fromUserId=" + fromUserId +
-                ", toUserId=" + toUserId +
+                "fromAccount=" + fromAccount +
+                ", toAccount=" + toAccount +
                 ", amount=" + amount +
                 ", transactionStatus=" + transactionStatus +
                 ", transactionType=" + transactionType +
-                ", tx_between='" + tx_between + '\'' +
                 '}';
     }
 }

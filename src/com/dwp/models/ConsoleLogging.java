@@ -7,4 +7,10 @@ public class ConsoleLogging implements Logging{
         System.out.println(input);
         System.out.println("--------------------------");
     }
+
+    @Override
+    public void info(String tag, Object input) {
+        System.out.println(tag+" ::   " +input);
+        System.out.println("************************************************");
+    }
 }
