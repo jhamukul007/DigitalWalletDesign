@@ -3,33 +3,33 @@ package com.dwp.dtos;
 import java.math.BigDecimal;
 
 public class PaymentRequestDto {
-    private Long fromUserId;
-    private Long toUserId;
+    private Long fromAccount;
+    private Long toAccount;
     private BigDecimal amount;
 
     public PaymentRequestDto() {
     }
 
-    public PaymentRequestDto(Long fromUserId, Long toUserId, BigDecimal amount) {
-        this.fromUserId = fromUserId;
-        this.toUserId = toUserId;
+    public PaymentRequestDto(Long fromAccount, Long toAccount, BigDecimal amount) {
+        this.fromAccount = fromAccount;
+        this.toAccount = toAccount;
         this.amount = amount;
     }
 
-    public Long getFromUserId() {
-        return fromUserId;
+    public Long getFromAccount() {
+        return fromAccount;
     }
 
-    public void setFromUserId(Long fromUserId) {
-        this.fromUserId = fromUserId;
+    public void setFromAccount(Long fromAccount) {
+        this.fromAccount = fromAccount;
     }
 
-    public Long getToUserId() {
-        return toUserId;
+    public Long getToAccount() {
+        return toAccount;
     }
 
-    public void setToUserId(Long toUserId) {
-        this.toUserId = toUserId;
+    public void setToAccount(Long toAccount) {
+        this.toAccount = toAccount;
     }
 
     public BigDecimal getAmount() {
@@ -38,14 +38,5 @@ public class PaymentRequestDto {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
-    }
-
-    @Override
-    public String toString() {
-        return "PaymentRequestDto{" +
-                "fromUserId=" + fromUserId +
-                ", toUserId=" + toUserId +
-                ", amount=" + amount +
-                '}';
     }
 }

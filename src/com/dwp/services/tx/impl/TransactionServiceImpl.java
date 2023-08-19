@@ -5,122 +5,117 @@ import com.dwp.enums.TransactionStatus;
 import com.dwp.enums.TransactionType;
 import com.dwp.exceptions.InsufficientBalanceException;
 import com.dwp.exceptions.TransactionException;
+import com.dwp.models.Account;
 import com.dwp.models.Logging;
 import com.dwp.models.Transaction;
 import com.dwp.models.TransactionDetail;
-import com.dwp.models.User;
-import com.dwp.services.UserService;
 import com.dwp.services.tx.TransactionService;
+import com.dwp.services.tx.account.AccountService;
 import com.dwp.utils.AppUtil;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TransactionServiceImpl implements TransactionService {
-    private final UserService userService;
     private final Logging logging;
-    private ConcurrentHashMap<Long, TransactionStatus> transactionProcess;
-    private Map<Long, TransactionDetail> userLevelTransactionDetails;
 
-    public TransactionServiceImpl(UserService userService, Logging logging) {
-        this.userService = userService;
+    private final AccountService accountService;
+    private ConcurrentHashMap<Long, TransactionStatus> transactionProcessForAccount;
+
+    public TransactionServiceImpl(Logging logging, AccountService accountService) {
         this.logging = logging;
-        this.transactionProcess = new ConcurrentHashMap<>();
-        this.userLevelTransactionDetails = new HashMap<>();
+        this.accountService = accountService;
+        this.transactionProcessForAccount = new ConcurrentHashMap<>();
     }
 
     @Override
     public void pay(PaymentRequestDto paymentDto) {
 
-        User senderUser = userService.getUserByIdOrThrowException(paymentDto.getFromUserId());
-        validateBalance(senderUser, paymentDto.getAmount());
-        User receiverUser = userService.getUserByIdOrThrowException(paymentDto.getToUserId());
+        Account senderAccount = accountService.getOrThrowByAccountNumber(paymentDto.getFromAccount());
+        validateBalance(senderAccount, paymentDto.getAmount());
+        Account receiverAccount = accountService.getOrThrowByAccountNumber(paymentDto.getToAccount());
         // Tx started
-        if (transactionProcess.get(senderUser.getId()) == TransactionStatus.PENDING)
+        if (transactionProcessForAccount.get(senderAccount.getId()) == TransactionStatus.PENDING)
             throw new TransactionException("Transaction in progress");
-        transactionProcess.put(senderUser.getId(), TransactionStatus.PENDING);
-        logging.log("Transcation started ");
-        TransactionDetail transactionDetail = userLevelTransactionDetails.getOrDefault(senderUser.getId(), new TransactionDetail());
+        transactionProcessForAccount.put(senderAccount.getId(), TransactionStatus.PENDING);
+        logging.log("Transaction started ");
+
+        TransactionDetail transactionDetail = accountService.getTxDetails(senderAccount.getId());
+
         Transaction transaction = Transaction.builder()
                 .id(AppUtil.getRandomId())
-                .fromUserId(senderUser.getId())
-                .toUserId(receiverUser.getId())
+                .fromAccount(senderAccount.getId())
+                .toAccount(receiverAccount.getId())
                 .amount(paymentDto.getAmount())
                 .transactionStatus(TransactionStatus.PENDING)
                 .transactionType(TransactionType.DEBIT)
                 .build();
         transactionDetail.addTransaction(transaction);
-        userLevelTransactionDetails.put(senderUser.getId(), transactionDetail);
+        accountService.addTransaction(senderAccount.getId(), transactionDetail);
         try {
-            senderUser.getDigitalWallet().debitAmount(paymentDto.getAmount());
+            senderAccount.debitAmount(paymentDto.getAmount());
         } catch (Exception e) {
             if (e instanceof InsufficientBalanceException)
                 throw e;
-            logging.log("Getting error while debit amount from user " + senderUser.getId());
-            senderUser.getDigitalWallet().creditAmount(paymentDto.getAmount());
+            logging.log("Getting error while debit amount from account " + senderAccount.getId());
+            senderAccount.creditAmount(paymentDto.getAmount());
             transaction.setTransactionStatus(TransactionStatus.FAILED);
-            transactionProcess.remove(senderUser.getId());
+            transactionProcessForAccount.remove(senderAccount.getId());
             return;
         }
         try {
-            receiverUser.getDigitalWallet().creditAmount(paymentDto.getAmount());
+            receiverAccount.creditAmount(paymentDto.getAmount());
         } catch (Exception e) {
-            logging.log("Getting error while credit amount from user " + receiverUser.getId());
-            senderUser.getDigitalWallet().creditAmount(paymentDto.getAmount());
+            logging.log("Getting error while credit amount to account " + receiverAccount.getId());
+            senderAccount.creditAmount(paymentDto.getAmount());
             transaction.setTransactionStatus(TransactionStatus.FAILED);
-            transactionProcess.remove(senderUser.getId());
+            transactionProcessForAccount.remove(senderAccount.getId());
             return;
         }
 
-        TransactionDetail commitedTransaction = userLevelTransactionDetails.get(senderUser.getId());
+        TransactionDetail commitedTransaction = accountService.getTxDetails(senderAccount.getId());
         transaction = commitedTransaction.getTransactionById(transaction.getId());
 
         transaction.setTransactionStatus(TransactionStatus.COMPLETED);
-        userLevelTransactionDetails.put(senderUser.getId(), transactionDetail);
 
-        TransactionDetail creditTxDetail = userLevelTransactionDetails.getOrDefault(receiverUser.getId(), new TransactionDetail());
+        TransactionDetail creditTxDetail = accountService.getTxDetails(receiverAccount.getId());
         Transaction creditTx = transaction.clone();
         creditTx.setTransactionType(TransactionType.CREDIT);
         creditTxDetail.addTransaction(creditTx);
-        userLevelTransactionDetails.put(receiverUser.getId(), creditTxDetail);
+        accountService.addTransaction(receiverAccount.getId(), creditTxDetail);
 
-        transactionProcess.remove(senderUser.getId());
+        transactionProcessForAccount.remove(senderAccount.getId());
+
+        logging.info("TX", String.format("Amount %s has been successfully transferred to user %s from user %s ", paymentDto.getAmount(),
+                receiverAccount.getId(), senderAccount.getId()));
     }
 
-    void validateBalance(User user, BigDecimal amount) {
-        int val = user.getDigitalWallet().getBalance().compareTo(amount);
+    void validateBalance(Account account, BigDecimal amount) {
+        int val = account.getBalance().compareTo(amount);
         if (val < 0)
             throw new InsufficientBalanceException("Insufficient Balance " + amount.intValue());
     }
 
     @Override
-    public TransactionDetail accountStatement(Long userId) {
-        return userLevelTransactionDetails.get(userId);
-    }
-
-    @Override
     public void addFund(PaymentRequestDto fundDetails) {
-        User receiverUser = userService.getUserByIdOrThrowException(fundDetails.getToUserId());
-        TransactionDetail transactionDetail = userLevelTransactionDetails.getOrDefault(receiverUser.getId(), new TransactionDetail());
+        Account receiverAccount = accountService.getOrThrowByAccountNumber(fundDetails.getToAccount());
+        TransactionDetail transactionDetail = accountService.getTxDetails(receiverAccount.getId());
         Transaction transaction = Transaction.builder()
                 .id(AppUtil.getRandomId())
-                .fromUserId(fundDetails.getFromUserId())
-                .toUserId(receiverUser.getId())
+                .fromAccount(fundDetails.getFromAccount())
+                .toAccount(fundDetails.getToAccount())
                 .amount(fundDetails.getAmount())
                 .transactionStatus(TransactionStatus.PENDING)
                 .transactionType(TransactionType.CREDIT)
                 .build();
         transactionDetail.addTransaction(transaction);
-        userLevelTransactionDetails.put(receiverUser.getId(), transactionDetail);
+        accountService.addTransaction(receiverAccount.getId(), transactionDetail);
 
-        receiverUser.getDigitalWallet().creditAmount(fundDetails.getAmount());
+        receiverAccount.creditAmount(fundDetails.getAmount());
 
-        transactionDetail = userLevelTransactionDetails.get(transaction.getToUserId());
-        transaction = transactionDetail.getTransactionById(transaction.getId());
         transaction.setTransactionStatus(TransactionStatus.COMPLETED);
+        logging.info("FUND", String.format("Fund %s has been successfully added to account %s ", fundDetails.getAmount(),
+                receiverAccount.getId()));
     }
 
 
